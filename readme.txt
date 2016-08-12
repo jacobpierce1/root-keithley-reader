@@ -1,0 +1,1 @@
+To plot the data, just put the files to be processed into 'plot_directory' and run ./plot. Easiest thing to do is probably to manually copy the files to the directory. It may be possible to make the process faster by implementing boost and having user enter in the file names.

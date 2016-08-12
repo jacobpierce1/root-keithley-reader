@@ -1,0 +1,18 @@
+NOTES ON SiPM IV CURVES
+Tests done by Jacob Pierce
+Type of SiPM:
+Number of channels: 16 (a1...d4)
+
+File format: first number is temperature at which SiPM was tested, second number is channel number. This table shows the temperature in the file name, the actual temperature during testing, and the temperature of the chiller to achieve equilibrium:
+
+File temp  |  Actual temp  |  Chiller temp
+---------------------------------------------
+5   |  5.5  +- .2 C  |  -3.0
+10  |    
+15  |  15.0 +- .2 C  |  11.0
+20  | 
+25  |  26.0 +- .2 C  |  28.0
+30  |
+35  |
+
+The thermometer probe was not placed directly on the SiPM in these tests. Rather, it was placed on the PCB board about .5 cm from the SiPM. Thermal paste was not used from the probe. A thermal pad was placed between the PCB board and the chiller plate. In each test, most of the lights in the lab were turned off and black cloth was used to cover the fridge door on all sides.
