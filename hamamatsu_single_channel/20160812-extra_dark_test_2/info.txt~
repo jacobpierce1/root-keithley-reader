@@ -1,0 +1,3 @@
+k.ext_sweep(47, 53, 10E-2, 3)
+
+T=25C, ungrounded in both cases. In the extra dark case, the keithley and chiller screens were covered and the computer screen was turned off. in the sipm covered case, black cloth was placed directly around the sipm container.

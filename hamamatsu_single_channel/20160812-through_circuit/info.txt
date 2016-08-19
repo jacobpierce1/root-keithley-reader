@@ -1,0 +1,4 @@
+normal: k.ext_sweep(47, 53, 10E-2, 3)
+high res: k.ext_sweep(47, 53, 40E-3, 3)
+
+the keithley was run through the back of the fridge via coax into the bnc pins on the outside of the sipm project box. cover was on in both cases.

@@ -1,0 +1,3 @@
+pause = 4s
+increment = 40mV
+not grounded

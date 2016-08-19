@@ -1,0 +1,3 @@
+k.ext_sweep(47, 53, 10E-2, 3)
+
+cover was on in both tests. T=25C. The only difference is that the ground cable was plugging into fridge on one run.

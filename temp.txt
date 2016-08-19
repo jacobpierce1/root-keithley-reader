@@ -1,5 +1,4 @@
-single_channel_1s_pause_before_record.csv
-single_channel_2s_pause_before_record.csv
-single_channel_3s_pause_before_record.csv
-single_channel_3s_pause_before_record_try2.csv
-single_channel_4s_pause_before_record.csv
+/home/helix/SIPM_TESTING/sipm_iv_curves/sensl4/20160819-pause_test/sensl4_21_1_pause1.csv
+/home/helix/SIPM_TESTING/sipm_iv_curves/sensl4/20160819-pause_test/sensl4_21_1_pause2.csv
+/home/helix/SIPM_TESTING/sipm_iv_curves/sensl4/20160819-pause_test/sensl4_21_1_pause3.csv
+/home/helix/SIPM_TESTING/sipm_iv_curves/sensl4/20160819-pause_test/sensl4_21_1_pause4.csv

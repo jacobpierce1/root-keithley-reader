@@ -1,0 +1,2 @@
+pause = 2s
+increment = 200 mV

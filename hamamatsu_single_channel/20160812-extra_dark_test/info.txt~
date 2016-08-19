@@ -1,0 +1,4 @@
+k.ext_sweep(47, 53, 10E-2, 3)
+T=25
+extra_dark: covered keithley and chiller screens; turned off extra lights on other side of room (not all lights were off)
+sipm covered: sipm was directly covered with cloth

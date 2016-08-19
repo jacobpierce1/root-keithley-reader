@@ -11,11 +11,12 @@ struct plot_args {
   int num_projects;
   vector<string> projects;
   vector<int> channels; 
-  //  vector<float> time_shifts;
+  vector<float> axis_cuts;
   vector<string> leg_labels;
   string title;
   float time_cut;
   bool fill_tree;
+  bool log_scale;
 };
 
 // functions
@@ -23,18 +24,24 @@ void make_compare(plot_args args);
 bool file_exists(string proj_name);
 void graph_compare(plot_args args);
 TLegend *make_legend ();
-void copy_files (plot_args args, int i);
 vector<string> split(string str, char delimiter);
 void fill_tree(plot_args args);
-string switch_chars(string str, char start_char, char end_char);
-void combine_temp_files(plot_args args);
+string replace_chars(string str, char start_char, char end_char);
 vector<string> get_projects(string dir);
 const string currentDateTime();
 
 // constants
 const string directory = "/home/helix/SIPM_TESTING/sipm_iv_curves/";
 const char script_delimiter = '!';
+const vector<int> NO_AXIS_CUT = {-10000, 10000, -10000, 10000};
+const vector<int> GRAPH_COLORS = {1, 2, 3, 4, 6, 7, 8, 9, 30, 11, 40, 41, 42, 28, 46, 38};
 
+// parameters to easily change the order of args
+const int DIRECTORY_ARG = 0;
+const int LOG_ARG = 1;
+const int LEG_ARG = 2;
+const int TITLE_ARG = 3;
+const int AXISCUT_ARG = 4;
 
 /////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
@@ -64,7 +71,7 @@ void make_compare(plot_args args) {
 void graph_compare(plot_args args) {
   // declare canvas, graphs, multigraph, legend
   TCanvas *c1 = new TCanvas("c1", "IV Plot", 200, 10, 700, 500);
-  c1->SetLogy();
+  if(args.log_scale) c1->SetLogy();
   TGraph *graphs[args.num_projects];
   TMultiGraph *mg = new TMultiGraph();
   string mg_title = args.title + ";" + "Voltage (V); Current (A)";
@@ -80,8 +87,8 @@ void graph_compare(plot_args args) {
     ifstream fin (file.c_str());
     graphs[i] = new TGraph();
     graphs[i]->SetLineWidth(2);
-    graphs[i]->SetMarkerColorAlpha(i+1, 0);
-    graphs[i]->SetLineColor(i+1);  // lucky coincidence that these are the colors we want
+    graphs[i]->SetMarkerColorAlpha(GRAPH_COLORS[i], 0);
+    graphs[i]->SetLineColor(GRAPH_COLORS[i]);
     graphs[i]->SetFillColor(0);
     
     // first 8 lines of the file are not data
@@ -94,10 +101,22 @@ void graph_compare(plot_args args) {
     float rCurrent, rValue, rVolt;
     int counter = 0;
     while(getline(fin, line)) {
-      sscanf(line.c_str(), "%*d,%f,Amp DC,%*f,%f,F,F,F,F,F,F,Front,F,Main,%f,Volt DC,%*d,%*s,%*s", &rCurrent, &rValue, &rVolt );
-      graphs[i]->SetPoint(counter, rVolt, rCurrent);
+      vector<string> temp = split(line, ',');
+      // sscanf(line.c_str(), "%*d,%f,Amp DC,%*f,%f,F,F,F,F,F,F,%*s,F,Main,%f,Volt DC,%*d,%*s,%*s", &rCurrent, &rValue, &rVolt );
+      rCurrent = atof(temp[1].c_str());
+      rVolt = atof(temp[14].c_str());
+      
+      // check whether there is an axis cut and if so do it
+      if (args.axis_cuts.size() != 0) {
+	if (rVolt > args.axis_cuts[0] && rVolt < args.axis_cuts[1] && rCurrent > args.axis_cuts[2] && rCurrent < args.axis_cuts[3]) {
+	  graphs[i]->SetPoint(counter, rVolt, rCurrent);
+	}
+      }
+      else graphs[i]->SetPoint(counter, rVolt, rCurrent);
       counter++;
     }
+
+    // remove last point
     graphs[i]->RemovePoint(graphs[i]->GetN()-1);
     
     //add to multigraph and legend
@@ -247,21 +266,21 @@ const string currentDateTime() {
 
 
 
-
 // use linux shell command to count number of files
 vector<string> get_projects(string dir) {
   
   // send names of available files into text file called temp
-  string cmd1 = "ls " + dir + " > temp.txt";
+  string cmd1 = "ls " + dir + "*.csv > temp.txt";
   system(cmd1.c_str());
 
   // read out of the text file
   vector<string> files;
   string line;
+  size_t dir_length = dir.length();
   ifstream temp_file ("temp.txt");
   if (temp_file.is_open()) {
     while (getline(temp_file, line)) {
-      files.push_back(line);
+      files.push_back(line.substr(dir_length));
     }
   }
 
@@ -271,6 +290,7 @@ vector<string> get_projects(string dir) {
 
   return files;
 }
+
 
 
 // obtain command line args from the shell script ./plot
@@ -283,45 +303,74 @@ plot_args parse_args(string arg_string) {
 
   // fill the plot_args containing info about graph
   plot_args args;
-  if (parsed_args[0] == "") args.dir = directory + "plot_directory/";
-  else args.dir = directory + parsed_args[0] + "/"; 
+  if (parsed_args[DIRECTORY_ARG] == "") args.dir = directory;
+  else args.dir = directory + parsed_args[DIRECTORY_ARG] + "/";
   args.fill_tree = false;
+  args.log_scale = false;
 
   // fill projects and num_projects
   args.projects = get_projects(args.dir);
   args.num_projects = args.projects.size();
 
   // title
-  if (num_args >= 3) {
-    args.title = replace_chars(parsed_args[2], '_', ' ');
+  if (num_args >= TITLE_ARG + 1) {
+    args.title = replace_chars(parsed_args[TITLE_ARG], '_', ' ');
     if(args.title == "d" || args.title == "default") {
-      args.title = "Keithley Plot";
+      args.title = replace_chars(parsed_args[DIRECTORY_ARG], '_', ' ');
     }
-  } else {
-    args.title = "Keithley Plot";
+  } else args.title = replace_chars(parsed_args[DIRECTORY_ARG], '_', ' ');
+
+  // option to use log scale for y axis
+  if (num_args >= LOG_ARG + 1) {
+    if (parsed_args[LOG_ARG] == "log") args.log_scale = true;
+  }
+  
+  // get axis cuts
+  if (num_args >= AXISCUT_ARG + 1) {
+    vector<string> temp = split(parsed_args[AXISCUT_ARG], ',');
+    for (int i=0; i<4; i++) {
+      if (temp[i] == "d" || temp[i] == "default") args.axis_cuts.push_back(NO_AXIS_CUT[i]);
+      else args.axis_cuts.push_back(atof(temp[i].c_str()));
+    }
   }
 
-  // get time cut
-  if (num_args >= 5) args.time_cut = atof(parsed_args[4].c_str());
-  else args.time_cut = 0;
-
-  // legend labels. this is done last since it changes the mode.
-  if (num_args >= 2){
+  // legend labels
+  if (num_args >= LEG_ARG + 1){
 
     // check for the fill_tree mode
-    if(parsed_args[1] == "tree") args.fill_tree = true;
+    if(parsed_args[LEG_ARG + 1] == "tree") args.fill_tree = true;
 
-    // otherwise proceed as normally
-    else {
-      args.leg_labels = split(parsed_args[1], ',');
+    // check for default modes
+    else if (parsed_args[LEG_ARG] == "default" || parsed_args[LEG_ARG] == "d") {
       for (int i=0; i<args.num_projects; i++) {
-	args.leg_labels[i] = replace_chars(args.leg_labels[i], '_', ' ');
-	if (args.leg_labels[i] == "" || args.leg_labels[i] == "default" || 
-	    args.leg_labels[i] == "d") args.leg_labels[i] = args.projects[i];
+	args.leg_labels.push_back(replace_chars(args.projects[i].substr(0, args.projects[i].find('.')), '_', ' '));
       }
     }
-  } else for (int i=0; i<args.num_projects; i++) args.leg_labels.push_back(args.projects[i]);
+  
+    // otherwise proceed as normally
+    else {
+      args.leg_labels = split(parsed_args[LEG_ARG], ',');
+      for (int i=0; i<args.num_projects; i++) {
 
+	// check for default option and if so parse project name
+	if (args.leg_labels[i] == "" || args.leg_labels[i] == "default" || 
+	    args.leg_labels[i] == "d") {
+	 
+	  args.leg_labels[i] = replace_chars(args.projects[i].substr(0, args.projects[i].find('.')), '_', ' ');
+	}
+
+	// the only case in which the legend specified is actually used:
+	else args.leg_labels[i] = replace_chars(args.leg_labels[i], '_', ' ');
+      }
+    }
+    
+  }
+  // case: legend argument not supplied
+  else {
+        for (int i=0; i<args.num_projects; i++) {
+	args.leg_labels.push_back(replace_chars(args.projects[i].substr(0, args.projects[i].find('.')), '_', ' '));
+      }
+  }
   return args;
 }
 
